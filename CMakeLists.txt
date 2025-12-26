@@ -53,6 +53,8 @@ pico_enable_stdio_usb(test2 1)
 # Add the standard library to the build
 target_link_libraries(test2
         pico_stdlib
+        hardware_pwm
+        hardware_i2c
         pico_async_context_freertos
         FreeRTOS-Kernel-Heap4 )
 
