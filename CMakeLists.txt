@@ -28,7 +28,7 @@ set(PICO_BOARD pimoroni_pico_plus2_rp2350 CACHE STRING "Board type")
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 
-project(test2 C CXX ASM)
+project(main C CXX ASM)
 
 # add freeRtos 
 #include(FreeRTOS_Kernel_import.cmake) 
@@ -38,30 +38,36 @@ add_subdirectory(FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2350_ARM_NTZ FREERTOS
 # Initialise the Raspberry Pi Pico SDK
 pico_sdk_init()
 
+# Add source files from tasks and common folders
+file(GLOB TASKS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/tasks/*.c" "${CMAKE_CURRENT_LIST_DIR}/tasks/*.cpp")
+file(GLOB COMMON_SOURCES "${CMAKE_CURRENT_LIST_DIR}/common/*.c" "${CMAKE_CURRENT_LIST_DIR}/common/*.cpp")
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(test2 test2.cpp adder.cpp )
+add_executable(main main.cpp ${TASKS_SOURCES} ${COMMON_SOURCES})
 
-pico_set_program_name(test2 "test2")
-pico_set_program_version(test2 "0.1")
+pico_set_program_name(main "main")
+pico_set_program_version(main "0.1")
 
 # Modify the below lines to enable/disable output over UART/USB
-pico_enable_stdio_uart(test2 0)
-pico_enable_stdio_usb(test2 1)
+pico_enable_stdio_uart(main 0)
+pico_enable_stdio_usb(main 1)
 
 # Add the standard library to the build
-target_link_libraries(test2
+target_link_libraries(
+        main
         pico_stdlib
         hardware_pwm
         hardware_i2c
         pico_async_context_freertos
         FreeRTOS-Kernel-Heap4 )
 
-# Add the standard include files to the build
-target_include_directories(test2 PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}     
-        ) 
+# Add include directories
+target_include_directories(main PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}
+    ${CMAKE_CURRENT_LIST_DIR}/tasks
+    ${CMAKE_CURRENT_LIST_DIR}/common
+)
 
-pico_add_extra_outputs(test2)
+pico_add_extra_outputs(main)
 
