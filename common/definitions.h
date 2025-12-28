@@ -57,3 +57,14 @@ typedef struct
 #define MOTOR_ENABLED 4
 #define MOTOR_STOP 5
 #define AUTO_MODE 6
+
+#define DEBOUNCE_SIZE 10
+
+enum DriveMode
+{
+    OFF,     // 0
+    PHASE_A, // 1
+    PHASE_B, // 2
+    PHASE_C, // 3
+    AUTO     // 4
+};

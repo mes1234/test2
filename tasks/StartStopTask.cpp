@@ -5,8 +5,6 @@
 #include "../common/definitions.h"
 #include "../common/interfaces.h"
 
-#define DEBOUNCE_SIZE 10
-
 void vTaskStartStopDriver(void *pvParameters)
 {
     int state[DEBOUNCE_SIZE] = {0};

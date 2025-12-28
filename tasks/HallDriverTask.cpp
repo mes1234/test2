@@ -35,5 +35,4 @@ void ReadAngleCallback(TimerHandle_t xTimer)
 {
     angle_rad = read_raw_angle(i2c_default);
     time_absolute_ticks_last_angle_read++;
-    // printf("Angle (deg): %.2f\n", angle_rad_to_deg(angle_rad));
 }

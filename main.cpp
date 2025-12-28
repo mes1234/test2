@@ -24,6 +24,7 @@ int main()
 
     xTaskCreate(vTaskGamePadDriver, "Blink Task", 256, NULL, 1, NULL);
     xTaskCreate(vTaskStartStopDriver, "Read buttons for start stop", 256, NULL, 1, NULL);
+    xTaskCreate(vTaskSystemConfig, "System interface", 256, NULL, 1, NULL);
 
     TimerHandle_t hallSensorTimer = xTimerCreate("Timer Hall sensor", pdMS_TO_TICKS(HALL_READ_PERIOD_MS), pdTRUE, NULL, ReadAngleCallback);
     xTimerStart(hallSensorTimer, 0);
