@@ -21,10 +21,10 @@
 #define AS5600_ANGLE 0x0E
 
 // Timer setup for angle read
-#define HALL_READ_PERIOD_MS 10
+#define HALL_READ_PERIOD_MS 5
 
 // Timer setup for BLDC driver
-#define BLDC_DRIVER_MS 100
+#define BLDC_DRIVER_MS 5
 
 #define BUTTON_X 6
 #define BUTTON_Y 2

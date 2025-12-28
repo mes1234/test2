@@ -27,6 +27,12 @@ extern QueueHandle_t command_queue;
 // Single Write, multiple Read Angle
 extern float angle_rad;
 
+// Single Write, offset to set 0 Angle
+extern float zero_offset_angle;
+
+// Average angle between phases (mechanical)
+extern float between_phase_angle;
+
 // Time from start of service
 extern long time_absolute_ticks_last_angle_read;
 
