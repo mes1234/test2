@@ -3,7 +3,6 @@
 
 #include "definitions.h"
 
-QueueHandle_t queue_zero_crossing;
 QueueHandle_t start_stop_queue;
 
 float angle_rad = 0.0f;

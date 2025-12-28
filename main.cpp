@@ -19,10 +19,8 @@ int main()
 {
     stdio_init_all();
 
-    queue_zero_crossing = xQueueCreate(10, sizeof(int));
     start_stop_queue = xQueueCreate(10, sizeof(int));
 
-    xTaskCreate(vTaskBlinkAtZero, "Blink at zero Task", 256, NULL, 1, NULL);
     xTaskCreate(vTaskGamePadDriver, "Blink Task", 256, NULL, 1, NULL);
     xTaskCreate(vTaskStartStopDriver, "Read buttons for start stop", 256, NULL, 1, NULL);
 

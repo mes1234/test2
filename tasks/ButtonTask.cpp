@@ -123,13 +123,11 @@ void vTaskGamePadDriver(void *pvParameters)
         {
             state = 1;
             xQueueSend(start_stop_queue, &state, 10);
-            printf("Button A is pressed!\n");
         }
         if (buttons.b)
         {
             state = 0;
             xQueueSend(start_stop_queue, &state, 10);
-            printf("Button B is pressed!\n");
         }
         sleep_ms(20);
     }
