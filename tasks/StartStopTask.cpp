@@ -43,8 +43,16 @@ void vTaskStartStopDriver(void *pvParameters)
         }
         if (debounce_ok)
         {
-            gpio_put(ENABLE_PIN, state[0]);
-            gpio_put(PICO_DEFAULT_LED_PIN, state[0]);
+            if (state[0] == MOTOR_ENABLED)
+            {
+                gpio_put(ENABLE_PIN, true);
+                gpio_put(PICO_DEFAULT_LED_PIN, true);
+            }
+            if (state[0] == MOTOR_STOP)
+            {
+                gpio_put(ENABLE_PIN, false);
+                gpio_put(PICO_DEFAULT_LED_PIN, false);
+            }
         }
 
         vTaskDelay(pdMS_TO_TICKS(100));

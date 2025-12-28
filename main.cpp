@@ -20,6 +20,7 @@ int main()
     stdio_init_all();
 
     start_stop_queue = xQueueCreate(10, sizeof(int));
+    command_queue = xQueueCreate(10, sizeof(int));
 
     xTaskCreate(vTaskGamePadDriver, "Blink Task", 256, NULL, 1, NULL);
     xTaskCreate(vTaskStartStopDriver, "Read buttons for start stop", 256, NULL, 1, NULL);

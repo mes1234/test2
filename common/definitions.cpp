@@ -4,6 +4,7 @@
 #include "definitions.h"
 
 QueueHandle_t start_stop_queue;
+QueueHandle_t command_queue;
 
 float angle_rad = 0.0f;
 

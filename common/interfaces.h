@@ -17,6 +17,7 @@ void ReadAngleCallback(TimerHandle_t xTimer);
 void vTaskStartStopDriver(void *pvParameters);
 
 extern QueueHandle_t start_stop_queue;
+extern QueueHandle_t command_queue;
 
 // Single Write, multiple Read Angle
 extern float angle_rad;

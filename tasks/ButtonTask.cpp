@@ -121,14 +121,38 @@ void vTaskGamePadDriver(void *pvParameters)
         ButtonStates buttons = digitalReadBulk(i2c_default);
         if (buttons.a)
         {
-            state = 1;
-            xQueueSend(start_stop_queue, &state, 10);
+            state = PHASE_A_SET;
+            xQueueSend(command_queue, &state, 10);
         }
         if (buttons.b)
         {
-            state = 0;
-            xQueueSend(start_stop_queue, &state, 10);
+            state = PHASE_B_SET;
+            xQueueSend(command_queue, &state, 10);
         }
+        if (buttons.y)
+        {
+            state = PHASE_C_SET;
+            xQueueSend(command_queue, &state, 10);
+        }
+        if (buttons.start)
+        {
+            state = MOTOR_ENABLED;
+            xQueueSend(start_stop_queue, &state, 10);
+            xQueueSend(command_queue, &state, 10);
+        }
+
+        if (buttons.x)
+        {
+            state = MOTOR_STOP;
+            xQueueSend(start_stop_queue, &state, 10);
+            xQueueSend(command_queue, &state, 10);
+        }
+        if (buttons.select)
+        {
+            state = AUTO_MODE;
+            xQueueSend(command_queue, &state, 10);
+        }
+
         sleep_ms(20);
     }
 }

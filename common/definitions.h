@@ -50,3 +50,10 @@ typedef struct
     bool select;
     bool start;
 } ButtonStates;
+
+#define PHASE_A_SET 1
+#define PHASE_B_SET 2
+#define PHASE_C_SET 3
+#define MOTOR_ENABLED 4
+#define MOTOR_STOP 5
+#define AUTO_MODE 6
