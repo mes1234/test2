@@ -68,6 +68,18 @@ float calculate_phase_advance(float current_el_angle, float previous_angle)
 
     return phase_advance;
 }
+void inverse_park_transform(float vd, float vq, float theta, float *valpha, float *vbeta)
+{
+    *valpha = vd * cosf(theta) - vq * sinf(theta);
+    *vbeta = vd * sinf(theta) + vq * cosf(theta);
+}
+
+void inverse_clarke_transform(float valpha, float vbeta, float *va, float *vb, float *vc)
+{
+    *va = valpha;
+    *vb = -0.5f * valpha + 0.866025f * vbeta;
+    *vc = -0.5f * valpha - 0.866025f * vbeta;
+}
 
 void set_phase_pwm(uint16_t amplitude)
 {
@@ -77,9 +89,34 @@ void set_phase_pwm(uint16_t amplitude)
 
     electrical_angle = fmodf(electrical_angle, 2.0f * 3.14159f);
 
-    uint16_t u = amplitude * (0.5f + 0.5f * sinf(electrical_angle));
-    uint16_t v = amplitude * (0.5f + 0.5f * sinf(electrical_angle - 2.094f));
-    uint16_t w = amplitude * (0.5f + 0.5f * sinf(electrical_angle + 2.094f));
+    // 2. Set desired voltages (open-loop FOC)
+    float vd = 0.0f;                // No d-axis voltage
+    float vq = amplitude / 1000.0f; // Normalize amplitude to [0,1]
+
+    // 3. Inverse Park transform
+    float valpha, vbeta;
+    inverse_park_transform(vd, vq, electrical_angle, &valpha, &vbeta);
+
+    // 4. Inverse Clarke transform
+    float va, vb, vc;
+    inverse_clarke_transform(valpha, vbeta, &va, &vb, &vc);
+
+    // 4. Scale and apply PWM (va, vb, vc are in [-1,1])
+    uint16_t u = (uint16_t)(500.0f * (va + 1.0f)); // Scale to [0,1000]
+    uint16_t v = (uint16_t)(500.0f * (vb + 1.0f));
+    uint16_t w = (uint16_t)(500.0f * (vc + 1.0f));
+
+    // Clamp to [0,1000] (optional, for safety)
+    if (u > 1000)
+        u = 1000;
+    if (v > 1000)
+        v = 1000;
+    if (w > 1000)
+        w = 1000;
+
+    // uint16_t u = amplitude * (0.5f + 0.5f * sinf(electrical_angle));
+    // uint16_t v = amplitude * (0.5f + 0.5f * sinf(electrical_angle - 2.094f));
+    // uint16_t w = amplitude * (0.5f + 0.5f * sinf(electrical_angle + 2.094f));
 
     pwm_set_chan_level(pwm_gpio_to_slice_num(INH_U), PWM_CHAN_A, u);
     pwm_set_chan_level(pwm_gpio_to_slice_num(INH_V), PWM_CHAN_A, v);
