@@ -146,7 +146,7 @@ void set_phase_c(uint16_t amplitude)
     pwm_set_chan_level(pwm_gpio_to_slice_num(INH_W), PWM_CHAN_A, amplitude);
 }
 
-uint16_t duty = 100; // 50% duty cycle
+uint16_t duty = 500; // 50% duty cycle
 int step = 0;
 const float angle_step = 0.02f; // speed control (smaller = slower)
 
