@@ -2,6 +2,8 @@
 
 #include "pico/stdlib.h"
 #include "hardware/i2c.h"
+#include "hardware/timer.h"
+
 #include "../common/definitions.h"
 #include "../common/interfaces.h"
 
@@ -33,6 +35,6 @@ float read_raw_angle(i2c_inst_t *i2c)
 
 void ReadAngleCallback(TimerHandle_t xTimer)
 {
-    angle_rad = read_raw_angle(i2c_default);
-    time_absolute_ticks_last_angle_read++;
+    uint64_t timestamp = time_us_64();
+    float angle_rad = read_raw_angle(i2c_default);
 }

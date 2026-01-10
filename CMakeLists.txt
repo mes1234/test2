@@ -41,10 +41,11 @@ pico_sdk_init()
 # Add source files from tasks and common folders
 file(GLOB TASKS_SOURCES "${CMAKE_CURRENT_LIST_DIR}/tasks/*.c" "${CMAKE_CURRENT_LIST_DIR}/tasks/*.cpp")
 file(GLOB COMMON_SOURCES "${CMAKE_CURRENT_LIST_DIR}/common/*.c" "${CMAKE_CURRENT_LIST_DIR}/common/*.cpp")
+file(GLOB LIB_SOURCES "${CMAKE_CURRENT_LIST_DIR}/lib/*.c" "${CMAKE_CURRENT_LIST_DIR}/lib/*.cpp")
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(main main.cpp ${TASKS_SOURCES} ${COMMON_SOURCES})
+add_executable(main main.cpp ${TASKS_SOURCES} ${COMMON_SOURCES} ${LIB_SOURCES})
 
 pico_set_program_name(main "main")
 pico_set_program_version(main "0.1")
@@ -67,6 +68,7 @@ target_include_directories(main PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/tasks
     ${CMAKE_CURRENT_LIST_DIR}/common
+    ${CMAKE_CURRENT_LIST_DIR}/lib
 )
 
 pico_add_extra_outputs(main)

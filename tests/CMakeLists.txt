@@ -20,7 +20,6 @@ target_link_libraries(bldc_tests GTest::GTest GTest::Main)
 target_include_directories(bldc_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}
     ${CMAKE_CURRENT_LIST_DIR}/../lib
-    ${CMAKE_CURRENT_LIST_DIR}/../common
 )
  
 gtest_discover_tests(bldc_tests)

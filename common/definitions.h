@@ -1,3 +1,6 @@
+#include <cmath>
+#include <cstdint>
+
 // Define PWM pins for DRV8313 high-side inputs
 #define INH_U 16
 #define INH_V 18
@@ -24,7 +27,7 @@
 #define HALL_READ_PERIOD_MS 5
 
 // Timer setup for BLDC driver
-#define BLDC_DRIVER_MS 5
+#define BLDC_DRIVER_MS 10
 
 #define BUTTON_X 6
 #define BUTTON_Y 2

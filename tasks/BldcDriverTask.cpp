@@ -10,6 +10,7 @@
 
 #include "common/definitions.h"
 #include "common/interfaces.h"
+#include "common/bldc_lib.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -43,11 +44,11 @@ void init_pwm()
     pwm_set_enabled(slice_num_w, true);
 }
 
-float previous_angle = 0.0f;
+float previous_electric_angle = 0.0f;
 
 float calculate_phase_advance(float current_el_angle, float previous_angle)
 {
-    float speed_s = BLDC_DRIVER_MS / 1000.f;                         // Time between updates in seconds
+    float speed_s = BLDC_DRIVER_MS / 10.f;                           // Time between updates in seconds
     float rot_speed = (current_el_angle - previous_angle) / speed_s; // Electrical angular velocity (rad/s)
 
     // Define maximum phase advance (e.g., 30° = 0.5236 rad)
@@ -61,68 +62,35 @@ float calculate_phase_advance(float current_el_angle, float previous_angle)
     {
         phase_advance = max_phase_advance;
     }
-    else if (phase_advance < 0.0f)
+    else if (phase_advance <= 0.0f)
     {
-        phase_advance = 0.0f;
+        phase_advance = 0.1f;
     }
 
     return phase_advance;
-}
-void inverse_park_transform(float vd, float vq, float theta, float *valpha, float *vbeta)
-{
-    *valpha = vd * cosf(theta) - vq * sinf(theta);
-    *vbeta = vd * sinf(theta) + vq * cosf(theta);
-}
-
-void inverse_clarke_transform(float valpha, float vbeta, float *va, float *vb, float *vc)
-{
-    *va = valpha;
-    *vb = -0.5f * valpha + 0.866025f * vbeta;
-    *vc = -0.5f * valpha - 0.866025f * vbeta;
 }
 
 void set_phase_pwm(uint16_t amplitude)
 {
     // Electrical to mechanical angle for 22P/24N -> 11x
-    float electrical_angle = (angle_rad - zero_offset_angle + 0.01f) * 11.0f;
-    electrical_angle += calculate_phase_advance(electrical_angle, previous_angle);
+    float electrical_angle = (angle_rad - zero_offset_angle + 0.1) * 11.0f;
 
-    electrical_angle = fmodf(electrical_angle, 2.0f * 3.14159f);
+    if (electrical_angle < 0)
+    {
+        electrical_angle = 0.0;
+    }
 
-    // 2. Set desired voltages (open-loop FOC)
-    float vd = 0.0f;                // No d-axis voltage
-    float vq = amplitude / 1000.0f; // Normalize amplitude to [0,1]
+    electrical_angle = add_angles(electrical_angle, calculate_phase_advance(electrical_angle, previous_electric_angle));
 
-    // 3. Inverse Park transform
-    float valpha, vbeta;
-    inverse_park_transform(vd, vq, electrical_angle, &valpha, &vbeta);
-
-    // 4. Inverse Clarke transform
-    float va, vb, vc;
-    inverse_clarke_transform(valpha, vbeta, &va, &vb, &vc);
-
-    // 4. Scale and apply PWM (va, vb, vc are in [-1,1])
-    uint16_t u = (uint16_t)(500.0f * (va + 1.0f)); // Scale to [0,1000]
-    uint16_t v = (uint16_t)(500.0f * (vb + 1.0f));
-    uint16_t w = (uint16_t)(500.0f * (vc + 1.0f));
-
-    // Clamp to [0,1000] (optional, for safety)
-    if (u > 1000)
-        u = 1000;
-    if (v > 1000)
-        v = 1000;
-    if (w > 1000)
-        w = 1000;
-
-    // uint16_t u = amplitude * (0.5f + 0.5f * sinf(electrical_angle));
-    // uint16_t v = amplitude * (0.5f + 0.5f * sinf(electrical_angle - 2.094f));
-    // uint16_t w = amplitude * (0.5f + 0.5f * sinf(electrical_angle + 2.094f));
+    uint16_t u = amplitude * (0.5f + 0.5f * sinf(electrical_angle));
+    uint16_t v = amplitude * (0.5f + 0.5f * sinf(electrical_angle - 2.094f));
+    uint16_t w = amplitude * (0.5f + 0.5f * sinf(electrical_angle + 2.094f));
 
     pwm_set_chan_level(pwm_gpio_to_slice_num(INH_U), PWM_CHAN_A, u);
     pwm_set_chan_level(pwm_gpio_to_slice_num(INH_V), PWM_CHAN_A, v);
     pwm_set_chan_level(pwm_gpio_to_slice_num(INH_W), PWM_CHAN_A, w);
 
-    previous_angle = electrical_angle;
+    previous_electric_angle = electrical_angle;
 }
 
 void set_phase_a(uint16_t amplitude)
@@ -146,7 +114,7 @@ void set_phase_c(uint16_t amplitude)
     pwm_set_chan_level(pwm_gpio_to_slice_num(INH_W), PWM_CHAN_A, amplitude);
 }
 
-uint16_t duty = 500; // 50% duty cycle
+uint16_t duty = 250; // 50% duty cycle
 int step = 0;
 const float angle_step = 0.02f; // speed control (smaller = slower)
 
