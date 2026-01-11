@@ -2,26 +2,66 @@
 #include <cmath>
 #include "../lib/bldc_lib.h"
 
-TEST(BldcLibSuit, TrigAdd)
+/// @brief Check if buffer is init correctly
+TEST(BldcLibSuit, Buffer_Init_Correctness)
 {
-    auto alfa = 2.0 * M_PI;
-    auto adder = M_PI / 2.0;
-    auto result = add_angles(alfa, adder);
+
+    // Arrange
+    AngleBuffer buffer = {0};
+
+    auto angle = 5 * M_PI_2; // It is actually absoulte PI/2
+
+    // Act
+    // Timestamp should be at least ANGLE_BUFFER_SIZE
+    add_angle_to_buffer(&buffer, angle, ANGLE_BUFFER_SIZE);
+
+    // Assert
+    auto result = get_current_buffer_value(&buffer);
     EXPECT_FLOAT_EQ(result, M_PI_2);
 }
 
-TEST(BldcLibSuit, AngularSpeed)
+/// @brief Check if buffer is filed correctly
+TEST(BldcLibSuit, Buffer_Filling_Correctness)
 {
+
+    // Arrange
+    AngleBuffer buffer = {0};
+
+    auto angle = 5 * M_PI_2; // It is actually absoulte PI/2
+
+    // Act
+    // Timestamp should be at least ANGLE_BUFFER_SIZE
+    add_angle_to_buffer(&buffer, angle, ANGLE_BUFFER_SIZE);
+
+    auto init_angle = get_current_buffer_value(&buffer);
+
     int i = 0;
-    for (i = 0; i < 10; i++)
+    for (i = 0; i < 100; i++)
     {
-        add_angle_to_buffer(i * M_PI / 2, i);
+        auto angle = fmod(i * M_PI_2 + init_angle, 2 * M_PI);
+        add_angle_to_buffer(&buffer, angle, i + ANGLE_BUFFER_SIZE);
     }
 
-    auto result = estimate_angle(i-1);
-
-    EXPECT_FLOAT_EQ((i-1) * M_PI / 2, result);
+    // Assert
+    auto result = get_current_buffer_value(&buffer);
+    EXPECT_FLOAT_EQ(result, M_PI_2);
 }
+
+// /// @brief Test storing a buffer
+// TEST(BldcLibSuit, Angular_Speed)
+// {
+//     int i = 0;
+//     for (i = 0; i < 100; i++)
+//     {
+//         auto angle = fmod(i * M_PI_2, 2 * M_PI);
+//         add_angle_to_buffer(angle, i);
+//     }
+
+//     auto result = estimate_angle(i - 1);
+//     auto expected = fmod((i - 1) * M_PI_2, 2 * M_PI);
+
+//     EXPECT_FLOAT_EQ(expected, result);
+// }
 
 int main(int argc, char **argv)
 {

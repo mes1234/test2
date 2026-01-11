@@ -2,101 +2,106 @@
 #include "bldc_lib.h"
 #include <cstdint>
 
-#define TWO_PI (2.0 * M_PI)
-
-AngleInTime angle_in_time_rad[ANGLE_BUFFER_SIZE] = {0};
-
-float angular_speed[ANGLE_BUFFER_SIZE - 1] = {0};
-
-float avg_rot_speed = 0.0;
-
-int buffer_position = 0;
-int prev_buffer_position = ANGLE_BUFFER_SIZE - 1;
-
-double add_angles(double alfa, double beta)
+void init_buffer_mask(AngleBuffer *buffer, float ratio)
 {
-    float wrapped = fmodf(alfa + beta, TWO_PI);
-    return wrapped < 0 ? wrapped + TWO_PI : wrapped;
+    for (int i = 0; i < ANGLE_BUFFER_SIZE - 1; i++)
+    {
+        buffer->buffer_mask[i] = 1.0f;
+    }
 }
 
-void update_average_rot_speed()
+void update_average_rot_speed(AngleBuffer *buffer)
 {
     int i = 0;
     int counter = 0;
+    float speed = 0.0;
 
-    if (buffer_position != ANGLE_BUFFER_SIZE - 1)
+    // Clear speed
+    buffer->avg_rot_speed = 0.0;
+
+    for (i = 0; i <= ANGLE_BUFFER_SIZE - 2; i++)
     {
-        for (i = buffer_position + 1; i < ANGLE_BUFFER_SIZE - 2; i++)
+        int item_position = (i + 1 + buffer->buffer_position) % ANGLE_BUFFER_SIZE;
+        int next_item_position = (i + 2 + buffer->buffer_position) % ANGLE_BUFFER_SIZE;
+
+        int delta_t = buffer->buffer[next_item_position].timestamp - buffer->buffer[item_position].timestamp;
+
+        if (delta_t != 0)
         {
-            angular_speed[counter] = (float)(angle_in_time_rad[i + 1].angle_rad - angle_in_time_rad[i].angle_rad) / (float)(angle_in_time_rad[i + 1].timestamp - angle_in_time_rad[i].timestamp);
-            counter++;
+            speed = (buffer->buffer[next_item_position].angle_rad - buffer->buffer[item_position].angle_rad) / (float)delta_t;
+
+            buffer->avg_rot_speed = buffer->avg_rot_speed + speed * buffer->buffer_mask[i];
         }
 
-        angular_speed[counter] = (float)(angle_in_time_rad[0].angle_rad - angle_in_time_rad[ANGLE_BUFFER_SIZE - 1].angle_rad) / (float)(angle_in_time_rad[0].timestamp - angle_in_time_rad[ANGLE_BUFFER_SIZE - 1].timestamp);
-        counter++;
+        buffer->avg_rot_speed = buffer->avg_rot_speed / (float)(ANGLE_BUFFER_SIZE - 1);
     }
-
-    for (i = 0; i < buffer_position; i++)
-    {
-        angular_speed[counter] = (float)(angle_in_time_rad[i + 1].angle_rad - angle_in_time_rad[i].angle_rad) / (float)(angle_in_time_rad[i + 1].timestamp - angle_in_time_rad[i].timestamp);
-        counter++;
-    }
-
-    avg_rot_speed = 0;
-
-    for (i = 0; i < ANGLE_BUFFER_SIZE - 1; i++)
-    {
-        avg_rot_speed = avg_rot_speed + angular_speed[i];
-    }
-
-    avg_rot_speed = avg_rot_speed / ANGLE_BUFFER_SIZE - 1;
 }
 
-float estimate_angle(uint64_t timestamp)
+float estimate_angle(AngleBuffer *buffer, uint64_t timestamp)
 {
-    AngleInTime last_observed = angle_in_time_rad[prev_buffer_position];
+    AngleInTime last_observed = buffer->buffer[buffer->buffer_position];
 
-    return last_observed.angle_rad + avg_rot_speed * (timestamp - last_observed.timestamp);
+    return last_observed.angle_rad + buffer->avg_rot_speed * (timestamp - last_observed.timestamp);
 }
 
-void add_angle_to_buffer(float angle, uint64_t timestamp)
+float get_current_buffer_value(AngleBuffer *buffer)
 {
-    
-    int full_revolutions = (int)(angle_in_time_rad[buffer_position].angle_rad / (2 * M_PI));
-    float angle_within_rev = fmod(angle_in_time_rad[buffer_position].angle_rad, 2 * M_PI);
+    return buffer->buffer[buffer->buffer_position].angle_rad;
+}
+
+void add_angle_to_buffer(AngleBuffer *buffer, float angle, uint64_t timestamp)
+{
+    auto angle_wraped = fmod(angle, TWO_PI);
+
+    int i = 0;
+
+    // Handle init state
+    if (!buffer->buffer_initialized)
+    {
+        for (i = 0; i < ANGLE_BUFFER_SIZE; i++)
+        {
+            buffer->buffer[i] = {
+                timestamp - (ANGLE_BUFFER_SIZE - i),
+                angle_wraped,
+            };
+        }
+        buffer->buffer_position = ANGLE_BUFFER_SIZE - 1;
+
+        buffer->buffer_initialized = true;
+
+        init_buffer_mask(buffer, 1.0);
+
+        return;
+    }
+
+    // Estimate previous item revolution and angle
+
+    int prev_full_revolutions = (int)(buffer->buffer[buffer->buffer_position].angle_rad / (2 * M_PI));
+    float prev_angle_within_rev = fmod(buffer->buffer[buffer->buffer_position].angle_rad, 2 * M_PI);
+
+    // Set next position //
+
+    // Estimate next position, ensure buffer circular
+    buffer->buffer_position = (buffer->buffer_position + 1) % ANGLE_BUFFER_SIZE;
 
     double angle_to_store = 0;
 
-    if (avg_rot_speed > 0 && angle < angle_within_rev)
+    if (buffer->avg_rot_speed > 0 && angle < prev_angle_within_rev)
     {
-        angle_to_store = (full_revolutions + 1) * (2 * M_PI) + angle;
+        angle_to_store = (prev_full_revolutions + 1) * (2 * M_PI) + angle;
     }
-
-    else if (avg_rot_speed < 0 && angle > angle_within_rev)
+    else if (buffer->avg_rot_speed < 0 && angle > prev_angle_within_rev)
     {
-        angle_to_store = (full_revolutions - 1) * (2 * M_PI) + angle;
+        angle_to_store = (prev_full_revolutions - 1) * (2 * M_PI) + angle;
     }
-
     else
     {
-        angle_to_store = (full_revolutions) * (2 * M_PI) + angle;
+        angle_to_store = (prev_full_revolutions) * (2 * M_PI) + angle;
     }
-
-    angle_in_time_rad[buffer_position] = {
+    buffer->buffer[buffer->buffer_position] = {
         timestamp,
         angle_to_store,
     };
 
-    update_average_rot_speed();
-
-    if (buffer_position == ANGLE_BUFFER_SIZE - 1)
-    {
-        buffer_position = 0;
-        prev_buffer_position = ANGLE_BUFFER_SIZE - 1;
-    }
-    else
-    {
-        buffer_position++;
-        prev_buffer_position = buffer_position - 1;
-    }
+    update_average_rot_speed(buffer);
 }
