@@ -4,9 +4,16 @@
 
 void init_buffer_mask(AngleBuffer *buffer, float ratio)
 {
+    float sum = 0.0;
     for (int i = 0; i < ANGLE_BUFFER_SIZE - 1; i++)
     {
-        buffer->buffer_mask[i] = 1.0f;
+        buffer->buffer_mask[i] = exp((float)(i + 1) * ratio);
+        sum = sum + buffer->buffer_mask[i];
+    }
+
+    for (int i = 0; i < ANGLE_BUFFER_SIZE - 1; i++)
+    {
+        buffer->buffer_mask[i] = buffer->buffer_mask[i] / sum;
     }
 }
 

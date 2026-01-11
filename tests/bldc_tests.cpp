@@ -47,6 +47,50 @@ TEST(BldcLibSuit, Buffer_Filling_Correctness)
     EXPECT_FLOAT_EQ(result, M_PI_2);
 }
 
+/// @brief  Check if ratio 0.0 gives uniform mask distribution
+TEST(BldcLibSuit, Mask_Uniform_Test)
+{
+    // Arrange
+    AngleBuffer buffer = {0};
+
+    // Act
+    init_buffer_mask(&buffer, 0.0);
+
+    // Assert
+
+    float buffer_sum = 0.0;
+
+    for (int i = 0; i < ANGLE_BUFFER_SIZE - 1; i++)
+    {
+        EXPECT_FLOAT_EQ(buffer.buffer_mask[i], 1.0 / (ANGLE_BUFFER_SIZE - 1));
+
+        buffer_sum = buffer_sum + buffer.buffer_mask[i];
+    }
+
+    EXPECT_FLOAT_EQ(1.0, buffer_sum);
+}
+
+/// @brief  Check if ratio 0.4 gives mask sum = 1.0
+TEST(BldcLibSuit, Mask_Non_Uniform_Sum_Test)
+{
+    // Arrange
+    AngleBuffer buffer = {0};
+
+    // Act
+    init_buffer_mask(&buffer, 0.4);
+
+    // Assert
+
+    float buffer_sum = 0.0;
+
+    for (int i = 0; i < ANGLE_BUFFER_SIZE - 1; i++)
+    {
+        buffer_sum = buffer_sum + buffer.buffer_mask[i];
+    }
+
+    EXPECT_FLOAT_EQ(1.0, buffer_sum);
+}
+
 // /// @brief Test storing a buffer
 // TEST(BldcLibSuit, Angular_Speed)
 // {

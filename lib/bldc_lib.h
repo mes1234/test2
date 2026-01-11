@@ -20,6 +20,11 @@ typedef struct
     int buffer_position = 0;
 } AngleBuffer;
 
+/// @brief Init buffer mask
+/// @param buffer buffer
+/// @param ratio exponent ratio
+void init_buffer_mask(AngleBuffer *buffer, float ratio);
+
 /// @brief Init buffer mask so last item is taken with ratio and rest is adjusted using linear ramp
 /// @param buffer
 /// @param ratio
