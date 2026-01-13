@@ -39,8 +39,6 @@ void update_average_rot_speed(AngleBuffer *buffer)
 
             buffer->avg_rot_speed = buffer->avg_rot_speed + speed * buffer->buffer_mask[i];
         }
-
-        buffer->avg_rot_speed = buffer->avg_rot_speed / (float)(ANGLE_BUFFER_SIZE - 1);
     }
 }
 
@@ -48,7 +46,12 @@ float estimate_angle(AngleBuffer *buffer, uint64_t timestamp)
 {
     AngleInTime last_observed = buffer->buffer[buffer->buffer_position];
 
-    return last_observed.angle_rad + buffer->avg_rot_speed * (timestamp - last_observed.timestamp);
+    auto dt = (timestamp - last_observed.timestamp);
+
+    auto d_angle = buffer->avg_rot_speed * (timestamp - last_observed.timestamp);
+
+    auto result = last_observed.angle_rad + d_angle;
+    return result;
 }
 
 float get_current_buffer_value(AngleBuffer *buffer)
@@ -76,13 +79,12 @@ void add_angle_to_buffer(AngleBuffer *buffer, float angle, uint64_t timestamp)
 
         buffer->buffer_initialized = true;
 
-        init_buffer_mask(buffer, 1.0);
+        init_buffer_mask(buffer, buffer->buffer_weight_ratio);
 
         return;
     }
 
     // Estimate previous item revolution and angle
-
     int prev_full_revolutions = (int)(buffer->buffer[buffer->buffer_position].angle_rad / (2 * M_PI));
     float prev_angle_within_rev = fmod(buffer->buffer[buffer->buffer_position].angle_rad, 2 * M_PI);
 

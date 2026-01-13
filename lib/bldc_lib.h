@@ -18,6 +18,7 @@ typedef struct
     bool buffer_initialized = false;
     float avg_rot_speed = 0.0;
     int buffer_position = 0;
+    float buffer_weight_ratio = 0.0;
 } AngleBuffer;
 
 /// @brief Init buffer mask
@@ -43,3 +44,13 @@ float estimate_angle(AngleBuffer *buffer, uint64_t timestamp);
 /// @brief Get last item in buffer
 /// @return
 float get_current_buffer_value(AngleBuffer *buffer);
+
+inline double to_degrees(double radians)
+{
+    return radians * (180.0 / M_PI);
+}
+
+inline double to_radians(double deg)
+{
+    return deg * (M_PI / 180.0);
+}
