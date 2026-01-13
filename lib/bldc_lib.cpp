@@ -95,17 +95,19 @@ void add_angle_to_buffer(AngleBuffer *buffer, float angle, uint64_t timestamp)
 
     double angle_to_store = 0;
 
-    if (buffer->avg_rot_speed > 0 && angle < prev_angle_within_rev)
+    // Crossed 0 in positive direction
+    if (prev_angle_within_rev > (TWO_PI - ZERO_CROSSING_THRSHOLD) && angle_wraped < ZERO_CROSSING_THRSHOLD)
     {
-        angle_to_store = (prev_full_revolutions + 1) * (2 * M_PI) + angle;
+        angle_to_store = (prev_full_revolutions + 1) * (2 * M_PI) + angle_wraped;
     }
-    else if (buffer->avg_rot_speed < 0 && angle > prev_angle_within_rev)
+    // Crossed 0 in negative direction
+    else if (prev_angle_within_rev < (ZERO_CROSSING_THRSHOLD) && angle_wraped > (TWO_PI - ZERO_CROSSING_THRSHOLD))
     {
-        angle_to_store = (prev_full_revolutions - 1) * (2 * M_PI) + angle;
+        angle_to_store = (prev_full_revolutions - 1) * (2 * M_PI) + angle_wraped;
     }
     else
     {
-        angle_to_store = (prev_full_revolutions) * (2 * M_PI) + angle;
+        angle_to_store = (prev_full_revolutions) * (2 * M_PI) + angle_wraped;
     }
     buffer->buffer[buffer->buffer_position] = {
         timestamp,

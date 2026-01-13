@@ -4,6 +4,7 @@
 #define ANGLE_BUFFER_SIZE 10
 
 #define TWO_PI (2.0 * M_PI)
+#define ZERO_CROSSING_THRSHOLD TWO_PI / 3.0
 
 typedef struct
 {

@@ -28,18 +28,44 @@ TEST(BldcLibSuit, Buffer_Filling_Correctness)
 
     // Act
     // Timestamp should be at least ANGLE_BUFFER_SIZE
-    add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE);         //  90deg Rev 1 <- init
+    add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE);         //  90deg Rev 0 <- init
     add_angle_to_buffer(&buffer, M_PI_2 * 2, ANGLE_BUFFER_SIZE + 1); // 180deg Rev 0
     add_angle_to_buffer(&buffer, M_PI_2 * 3, ANGLE_BUFFER_SIZE + 2); // 270deg Rev 0
-    add_angle_to_buffer(&buffer, M_PI_2 * 4, ANGLE_BUFFER_SIZE + 3); // 360deg Rev 0/1
+    add_angle_to_buffer(&buffer, M_PI_2 * 4, ANGLE_BUFFER_SIZE + 3); // 360deg Rev 1
     add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE + 4);     // 90deg Rev 1 -> absolute 450deg
 
     // Assert
     auto result = get_current_buffer_value(&buffer);
-    EXPECT_FLOAT_EQ(result, 5.0 * M_PI_2);
+    auto expected = to_radians(450.0);
+    EXPECT_FLOAT_EQ(result, expected);
 }
 
-/// @brief Check if buffer is filed correctly
+/// @brief Check if angle tracking is getting back to 0
+TEST(BldcLibSuit, Angle_tracking_back_to_zero)
+{
+    // Arrange
+    AngleBuffer buffer = {0};
+
+    // Act
+    // Timestamp should be at least ANGLE_BUFFER_SIZE
+    add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE);         //  90deg Rev 0 <- init
+    add_angle_to_buffer(&buffer, M_PI_2 * 2, ANGLE_BUFFER_SIZE + 1); // 180deg Rev 0
+    add_angle_to_buffer(&buffer, M_PI_2 * 3, ANGLE_BUFFER_SIZE + 2); // 270deg Rev 0
+    add_angle_to_buffer(&buffer, M_PI_2 * 4, ANGLE_BUFFER_SIZE + 3); // 360deg Rev 1
+
+    add_angle_to_buffer(&buffer, M_PI_2 * 3, ANGLE_BUFFER_SIZE + 4); // 270deg Rev 0
+    add_angle_to_buffer(&buffer, M_PI_2 * 2, ANGLE_BUFFER_SIZE + 5); // 180deg Rev 0
+    add_angle_to_buffer(&buffer, M_PI_2 * 1, ANGLE_BUFFER_SIZE + 6); // 180deg Rev 0
+    add_angle_to_buffer(&buffer, M_PI_2 * 0, ANGLE_BUFFER_SIZE + 7); // 180deg Rev 0
+
+    // Assert
+    auto result = get_current_buffer_value(&buffer);
+    EXPECT_FLOAT_EQ(result, 0.0);
+}
+/// TODO
+/// WRAP AROUND 0deg + rot - rot -rot +rot -> 0deg
+
+/// @brief Check if angle estimate is correct
 TEST(BldcLibSuit, Constant_speed)
 {
     // Arrange
@@ -47,14 +73,14 @@ TEST(BldcLibSuit, Constant_speed)
 
     // Act
     // Timestamp should be at least ANGLE_BUFFER_SIZE
-    add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE);         //  90deg Rev 1 <- init
+    add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE);         //  90deg Rev 0 <- init
     add_angle_to_buffer(&buffer, M_PI_2 * 2, ANGLE_BUFFER_SIZE);     // 180deg Rev 0
     add_angle_to_buffer(&buffer, M_PI_2 * 3, ANGLE_BUFFER_SIZE + 1); // 270deg Rev 0
-    add_angle_to_buffer(&buffer, M_PI_2 * 4, ANGLE_BUFFER_SIZE + 2); // 360deg Rev 0/1
+    add_angle_to_buffer(&buffer, M_PI_2 * 4, ANGLE_BUFFER_SIZE + 2); // 360deg Rev 1
     add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE + 3);     // 90deg Rev 1 -> absolute 450deg
     add_angle_to_buffer(&buffer, M_PI_2 * 2, ANGLE_BUFFER_SIZE + 4); // 180deg Rev 1 -> absolute 540deg
     add_angle_to_buffer(&buffer, M_PI_2 * 3, ANGLE_BUFFER_SIZE + 5); // 270deg Rev 1 -> absolute 630deg
-    add_angle_to_buffer(&buffer, M_PI_2 * 4, ANGLE_BUFFER_SIZE + 6); // 360deg Rev 1/2 -> absolute 720deg
+    add_angle_to_buffer(&buffer, M_PI_2 * 4, ANGLE_BUFFER_SIZE + 6); // 360deg Rev 2 -> absolute 720deg
     add_angle_to_buffer(&buffer, M_PI_2, ANGLE_BUFFER_SIZE + 7);     // 90deg Rev 2 -> absolute 810deg
     add_angle_to_buffer(&buffer, M_PI_2 * 2, ANGLE_BUFFER_SIZE + 8); // 180deg Rev 2-> absolute 900deg
     add_angle_to_buffer(&buffer, M_PI_2 * 3, ANGLE_BUFFER_SIZE + 9); // 270deg Rev 2-> absolute 990deg
