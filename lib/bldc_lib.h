@@ -10,6 +10,7 @@ typedef struct
 {
     uint64_t timestamp;
     double angle_rad;
+    int revolution = 1;
 } AngleInTime;
 
 typedef struct

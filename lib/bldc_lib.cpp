@@ -85,8 +85,9 @@ void add_angle_to_buffer(AngleBuffer *buffer, float angle, uint64_t timestamp)
     }
 
     // Estimate previous item revolution and angle
-    int prev_full_revolutions = (int)(buffer->buffer[buffer->buffer_position].angle_rad / (2 * M_PI));
-    float prev_angle_within_rev = fmod(buffer->buffer[buffer->buffer_position].angle_rad, 2 * M_PI);
+
+    int prev_full_revolutions = (int)floor(buffer->buffer[buffer->buffer_position].angle_rad / (2 * M_PI));
+    float prev_angle_within_rev = fabs(fmod(buffer->buffer[buffer->buffer_position].angle_rad, 2 * M_PI));
 
     // Set next position //
 
@@ -95,24 +96,35 @@ void add_angle_to_buffer(AngleBuffer *buffer, float angle, uint64_t timestamp)
 
     double angle_to_store = 0;
 
-    // Crossed 0 in positive direction
+    int adder = 0;
+    int sign = 1;
+
+    if (prev_full_revolutions < 0)
+    {
+        adder = 1;
+        sign = -1;
+    }
+
+    // Positive crossing (e.g., 359° → 1°)
     if (prev_angle_within_rev > (TWO_PI - ZERO_CROSSING_THRSHOLD) && angle_wraped < ZERO_CROSSING_THRSHOLD)
     {
-        angle_to_store = (prev_full_revolutions + 1) * (2 * M_PI) + angle_wraped;
+        angle_to_store = sign * ((prev_full_revolutions + 1 + adder) * (2 * M_PI) + angle_wraped);
     }
-    // Crossed 0 in negative direction
-    else if (prev_angle_within_rev < (ZERO_CROSSING_THRSHOLD) && angle_wraped > (TWO_PI - ZERO_CROSSING_THRSHOLD))
+    // Negative crossing (e.g., 1° → 359°)
+    else if (prev_angle_within_rev < ZERO_CROSSING_THRSHOLD && angle_wraped > (TWO_PI - ZERO_CROSSING_THRSHOLD))
     {
-        angle_to_store = (prev_full_revolutions - 1) * (2 * M_PI) + angle_wraped;
+        angle_to_store = sign * ((prev_full_revolutions - 1 + adder) * (2 * M_PI) + angle_wraped);
     }
+    // No crossing
     else
     {
-        angle_to_store = (prev_full_revolutions) * (2 * M_PI) + angle_wraped;
+        angle_to_store = prev_full_revolutions * (2 * M_PI) + angle_wraped;
     }
+
     buffer->buffer[buffer->buffer_position] = {
         timestamp,
         angle_to_store,
-    };
+        (int)floor(angle_to_store / (2 * M_PI))};
 
     update_average_rot_speed(buffer);
 }
