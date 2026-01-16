@@ -5,12 +5,13 @@
 
 #define TWO_PI (2.0 * M_PI)
 #define ZERO_CROSSING_THRSHOLD TWO_PI / 3.0
+#define ZERO_NOISE 0.005 // ~0.3deg
 
 typedef struct
 {
-    uint64_t timestamp;
-    double angle_rad;
-    int revolution = 1;
+    uint64_t timestamp = 0;
+    double angle_rad = 0;
+    int revolution = 0;
 } AngleInTime;
 
 typedef struct
@@ -46,6 +47,15 @@ float estimate_angle(AngleBuffer *buffer, uint64_t timestamp);
 /// @brief Get last item in buffer
 /// @return
 float get_current_buffer_value(AngleBuffer *buffer);
+
+/// @brief Estimate revolution adder based on previous and current angle
+/// @return 1,0,-1
+int estimate_revolution_adder(float prev, float current);
+
+/// @brief Estimate absolute angle based on definition
+/// @param angle_in_time
+/// @return
+double get_abslute_angle(AngleInTime &angle_in_time);
 
 inline double to_degrees(double radians)
 {

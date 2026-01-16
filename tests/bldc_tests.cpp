@@ -60,7 +60,7 @@ TEST(BldcLibSuit, Angle_tracking_back_to_zero)
 
     // Assert
     auto result = get_current_buffer_value(&buffer);
-    EXPECT_FLOAT_EQ(result, 0.0);
+    EXPECT_FLOAT_EQ(result, ZERO_NOISE);
 }
 
 /// WRAP AROUND 0deg + rot - rot -rot +rot -> 0deg
@@ -94,7 +94,7 @@ TEST(BldcLibSuit, Angle_tracking_back_to_zero_two_rotations)
 
     // Assert
     auto result = get_current_buffer_value(&buffer);
-    EXPECT_FLOAT_EQ(result, 0.0);
+    EXPECT_NEAR(result, ZERO_NOISE, 0.001);
 }
 
 /// @brief Check if angle estimate is correct

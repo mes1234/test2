@@ -2,6 +2,11 @@
 #include "bldc_lib.h"
 #include <cstdint>
 
+double get_abslute_angle(AngleInTime &angle_in_time)
+{
+    return angle_in_time.angle_rad + TWO_PI * angle_in_time.revolution;
+}
+
 void init_buffer_mask(AngleBuffer *buffer, float ratio)
 {
     float sum = 0.0;
@@ -35,7 +40,7 @@ void update_average_rot_speed(AngleBuffer *buffer)
 
         if (delta_t != 0)
         {
-            speed = (buffer->buffer[next_item_position].angle_rad - buffer->buffer[item_position].angle_rad) / (float)delta_t;
+            speed = (get_abslute_angle(buffer->buffer[next_item_position]) - get_abslute_angle(buffer->buffer[item_position])) / (float)delta_t;
 
             buffer->avg_rot_speed = buffer->avg_rot_speed + speed * buffer->buffer_mask[i];
         }
@@ -50,18 +55,39 @@ float estimate_angle(AngleBuffer *buffer, uint64_t timestamp)
 
     auto d_angle = buffer->avg_rot_speed * (timestamp - last_observed.timestamp);
 
-    auto result = last_observed.angle_rad + d_angle;
+    auto result = get_abslute_angle(last_observed) + d_angle;
     return result;
 }
 
 float get_current_buffer_value(AngleBuffer *buffer)
 {
-    return buffer->buffer[buffer->buffer_position].angle_rad;
+    return get_abslute_angle(buffer->buffer[buffer->buffer_position]);
+}
+
+int estimate_revolution_adder(float prev, float current)
+{
+    if (prev < ZERO_CROSSING_THRSHOLD && current > (TWO_PI - ZERO_CROSSING_THRSHOLD))
+    {
+        // Crossed from positive to negative
+        return -1;
+    }
+
+    if (prev > (TWO_PI - ZERO_CROSSING_THRSHOLD) && current < ZERO_CROSSING_THRSHOLD)
+    {
+        // Crossed from negative to positive
+        return +1;
+    }
+
+    // No crossing occured
+    return 0;
 }
 
 void add_angle_to_buffer(AngleBuffer *buffer, float angle, uint64_t timestamp)
 {
     auto angle_wraped = fmod(angle, TWO_PI);
+
+    if (angle_wraped < ZERO_NOISE)
+        angle_wraped = ZERO_NOISE;
 
     int i = 0;
 
@@ -86,45 +112,20 @@ void add_angle_to_buffer(AngleBuffer *buffer, float angle, uint64_t timestamp)
 
     // Estimate previous item revolution and angle
 
-    int prev_full_revolutions = (int)floor(buffer->buffer[buffer->buffer_position].angle_rad / (2 * M_PI));
-    float prev_angle_within_rev = fabs(fmod(buffer->buffer[buffer->buffer_position].angle_rad, 2 * M_PI));
+    int prev_full_revolutions = buffer->buffer[buffer->buffer_position].revolution;
+    float prev_angle_within_rev = buffer->buffer[buffer->buffer_position].angle_rad;
 
     // Set next position //
 
     // Estimate next position, ensure buffer circular
     buffer->buffer_position = (buffer->buffer_position + 1) % ANGLE_BUFFER_SIZE;
 
-    double angle_to_store = 0;
-
-    int adder = 0;
-    int sign = 1;
-
-    if (prev_full_revolutions < 0)
-    {
-        adder = 1;
-        sign = -1;
-    }
-
-    // Positive crossing (e.g., 359° → 1°)
-    if (prev_angle_within_rev > (TWO_PI - ZERO_CROSSING_THRSHOLD) && angle_wraped < ZERO_CROSSING_THRSHOLD)
-    {
-        angle_to_store = sign * ((prev_full_revolutions + 1 + adder) * (2 * M_PI) + angle_wraped);
-    }
-    // Negative crossing (e.g., 1° → 359°)
-    else if (prev_angle_within_rev < ZERO_CROSSING_THRSHOLD && angle_wraped > (TWO_PI - ZERO_CROSSING_THRSHOLD))
-    {
-        angle_to_store = sign * ((prev_full_revolutions - 1 + adder) * (2 * M_PI) + angle_wraped);
-    }
-    // No crossing
-    else
-    {
-        angle_to_store = prev_full_revolutions * (2 * M_PI) + angle_wraped;
-    }
+    int revolutions_adder = estimate_revolution_adder(prev_angle_within_rev, angle_wraped);
 
     buffer->buffer[buffer->buffer_position] = {
         timestamp,
-        angle_to_store,
-        (int)floor(angle_to_store / (2 * M_PI))};
+        angle_wraped,
+        prev_full_revolutions + revolutions_adder};
 
     update_average_rot_speed(buffer);
 }
